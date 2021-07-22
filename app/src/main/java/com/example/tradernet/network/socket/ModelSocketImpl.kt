@@ -103,16 +103,15 @@ class ModelSocketImpl(
             }
 
             if (retry > RETRY_COUNT_CONNECT && !isConnected()) {
-                throw IllegalStateException("The socket is can't start.")
+                LoggerHelper.error(msg = "The socket is can't start", throwable = null)
             }
         }
     }
 
     private fun send(msg: String) {
-        if (!isConnected()) {
-            throw IllegalStateException("The connection is lost.")
+        if (isConnected()) {
+            socket.sendMessage(msg)
         }
-        socket.sendMessage(msg)
     }
 
     private fun ping() {
@@ -212,8 +211,8 @@ class ModelSocketImpl(
                     it.onChange(quote)
                 }
             }
-        } catch (e: Exception) {
-            LoggerHelper.error(msg, e)
+        } catch (exception: Exception) {
+            LoggerHelper.error(msg, exception)
         }
     }
 }

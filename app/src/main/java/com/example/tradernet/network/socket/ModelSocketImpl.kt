@@ -15,7 +15,8 @@ class ModelSocketImpl(
         private const val INTERVAL_SEND_PING_MILLIS = 5 * 1000L
         private const val INTERVAL_SEND_QUOTE_MILLIS = 5 * 1000L
         private const val INTERVAL_RETRY_CONNECT_MILLIS = 1 * 1000L
-        private const val RETRY_COUNT_CONNECT = 5
+        private const val RETRY_INFINITY_CONNECT = -1
+        private const val RETRY_COUNT_CONNECT = RETRY_INFINITY_CONNECT
 
         private const val CLOSE_NORMAL_CODE = 1000
         private const val CLOSER_NORMAL_TEXT = "The user has closed the connection."
@@ -90,8 +91,9 @@ class ModelSocketImpl(
     private fun startWaitCloseForRestart() {
         scope.launch {
             var retry = 1
+            val hasInfinityRestart = hasInfinityRestartSocket()
 
-            while (retry <= RETRY_COUNT_CONNECT) {
+            while (hasInfinityRestart || retry <= RETRY_COUNT_CONNECT) {
                 delay(INTERVAL_RETRY_CONNECT_MILLIS)
 
                 if (isClosed()) {
@@ -99,14 +101,22 @@ class ModelSocketImpl(
                     socket.openSocket(socketListener)
                     break
                 }
-                retry++
+
+                if (!hasInfinityRestart) {
+                    retry++
+                }
             }
 
-            if (retry > RETRY_COUNT_CONNECT && !isConnected()) {
+            if (!hasInfinityRestart &&
+                retry > RETRY_COUNT_CONNECT &&
+                !isConnected()) {
                 throw IllegalStateException("The socket is can't start.")
             }
         }
     }
+
+    private fun hasInfinityRestartSocket(): Boolean =
+        RETRY_COUNT_CONNECT == RETRY_INFINITY_CONNECT
 
     private fun send(msg: String) {
         if (!isConnected()) {

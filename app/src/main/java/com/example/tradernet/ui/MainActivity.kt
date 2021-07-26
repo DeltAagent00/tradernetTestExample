@@ -1,7 +1,9 @@
 package com.example.tradernet.ui
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.tradernet.databinding.ActivityMainBinding
@@ -36,10 +38,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initView() {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
     }
 
     private fun initRecyclerView() {
         val recyclerView = binding.recyclerView
+        recyclerView.setBackgroundColor(Color.WHITE)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = QuoteListAdapter()
         recyclerView.adapter = adapter

@@ -150,13 +150,13 @@ class QuoteListAdapter: RecyclerView.Adapter<QuoteListAdapter.ViewHolder>() {
 
         override fun setColorPercentPositiveValue() {
             binding.percentView.setTextColor(
-                ContextCompat.getColor(binding.percentView.context, R.color.colorFE2C59)
+                ContextCompat.getColor(binding.percentView.context, R.color.color75BF44)
             )
         }
 
         override fun setColorPercentNegativeValue() {
             binding.percentView.setTextColor(
-                ContextCompat.getColor(binding.percentView.context, R.color.color75BF44)
+                ContextCompat.getColor(binding.percentView.context, R.color.colorFE2C59)
             )
         }
 

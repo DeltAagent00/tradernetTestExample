@@ -16,7 +16,7 @@ class MainViewModel: ViewModel(), ISocketQuoteChangeListener {
         private const val DEFAULT_TICKERS = "RSTI,GAZP,MRKZ,RUAL,HYDR,MRKS,SBER,FEES,TGKA,VTBR," +
                 "ANH.US,VICL.US,BURG.US,NBL.US,YETI.US,WSFS.US,NIO.US,DXC.US,MIC.US,HSBC.US," +
                 "EXPN.EU,GSK.EU,SHP.EU,MAN.EU,DB1.EU,MUV2.EU,TATE.EU,KGF.EU,MGGT.EU,SGGD.EU"
-        private const val DELAY_RESET_QUOTES_VECTOR_MILLIS = 1 * 1000L
+        private const val DELAY_RESET_QUOTES_VECTOR_MILLIS = 1000L
     }
 
     @Inject
@@ -27,7 +27,7 @@ class MainViewModel: ViewModel(), ISocketQuoteChangeListener {
     private val parentJob = Job()
     private val coroutineContext = parentJob + Dispatchers.Default
     private val scope = CoroutineScope(coroutineContext)
-    private var jobResetVector: Job? = null
+    private var jobResetVectorMap = HashMap<String, Job>()
 
     private val tickerList = ArrayList<String>()
     private val quotesBuffer = HashMap<String, Quote>()
@@ -85,7 +85,9 @@ class MainViewModel: ViewModel(), ISocketQuoteChangeListener {
 
         _quotes.postValue(quotesBuffer.values.toList())
 
-        startDelayForResetVector()
+        if (vector != QuoteVectorEnum.None) {
+            startDelayForResetVector(resultQuote)
+        }
     }
 
     private fun calcVector(quote: Quote): QuoteVectorEnum {
@@ -112,34 +114,22 @@ class MainViewModel: ViewModel(), ISocketQuoteChangeListener {
         } ?: QuoteVectorEnum.None
     }
 
-    private fun startDelayForResetVector() {
-        val firstItemWithVectorNotNone = quotesBuffer.values.find {
-            hasVector(it)
+    private fun startDelayForResetVector(quote: Quote) {
+        closeResetVectorJob(quote.tickerId)
+
+        val jobResetVector = scope.launch {
+            delay(DELAY_RESET_QUOTES_VECTOR_MILLIS)
+
+            quotesBuffer[quote.tickerId] = quote.copy(
+                _vector = QuoteVectorEnum.None
+            )
+            _quotes.postValue(quotesBuffer.values.toList())
         }
-
-        if (firstItemWithVectorNotNone != null) {
-            closeResetVectorJob()
-
-            jobResetVector = scope.launch {
-                delay(DELAY_RESET_QUOTES_VECTOR_MILLIS)
-
-                quotesBuffer.values.forEach { itQuote ->
-                     if (hasVector(itQuote)) {
-                         quotesBuffer[itQuote.tickerId] = itQuote.copy(
-                             _vector = QuoteVectorEnum.None
-                         )
-                     }
-                }
-                _quotes.postValue(quotesBuffer.values.toList())
-            }
-        }
+        jobResetVectorMap[quote.tickerId] = jobResetVector
     }
 
-    private fun hasVector(quote: Quote): Boolean =
-        quote._vector != null && quote._vector != QuoteVectorEnum.None
-
-    private fun closeResetVectorJob() {
-        jobResetVector?.let {
+    private fun closeResetVectorJob(quoteKey: String) {
+        jobResetVectorMap[quoteKey]?.let {
             if (!it.isCancelled) {
                 it.cancel()
             }

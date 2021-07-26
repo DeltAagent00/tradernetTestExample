@@ -119,10 +119,9 @@ class ModelSocketImpl(
         RETRY_COUNT_CONNECT == RETRY_INFINITY_CONNECT
 
     private fun send(msg: String) {
-        if (!isConnected()) {
-            throw IllegalStateException("The connection is lost.")
+        if (isConnected()) {
+            socket.sendMessage(msg)
         }
-        socket.sendMessage(msg)
     }
 
     private fun ping() {
@@ -222,8 +221,8 @@ class ModelSocketImpl(
                     it.onChange(quote)
                 }
             }
-        } catch (e: Exception) {
-            LoggerHelper.error(msg, e)
+        } catch (exception: Exception) {
+            LoggerHelper.error(msg, exception)
         }
     }
 }
